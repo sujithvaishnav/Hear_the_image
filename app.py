@@ -11,10 +11,10 @@ try:
 except Exception:
     OCR_AVAILABLE = False
 
-st.set_page_config(page_title="Image → Audio Scene Describer", page_icon="🦮", layout="centered")
+st.set_page_config(page_title="Hear The Image", page_icon="🦮", layout="centered")
 
 
-st.title("🦮 Image → Audio Scene Describer")
+st.title("🦮 Hear The Image")
 st.caption("Accessible AI: describe what’s in a photo and speak it out.")
 
 col1, col2 = st.columns([1, 1])
