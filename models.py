@@ -1,4 +1,5 @@
 from transformers import BlipProcessor, BlipForConditionalGeneration
+import streamlit as st
 
 @st.cache_resource
 def load_blip():
