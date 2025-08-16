@@ -1,0 +1,29 @@
+# Python
+_pycache_/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.env
+.env
+
+# Virtual environment
+venv/
+ENV/
+env/
+myenv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+
+# Mac/Windows system files
+.DS_Store
+Thumbs.db
+
+# Docker
+*.pid
