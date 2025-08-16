@@ -1,4 +1,4 @@
-# Image → Audio Scene Describer  
+# Hear The Image (Image → Audio Scene Describer)  
 
 An **AI-powered accessibility tool** that helps blind and low-vision users understand images.  
 Upload or capture an image, and the app will **describe the scene in natural language** and **speak it out loud** in your chosen language.  
@@ -26,8 +26,8 @@ Upload or capture an image, and the app will **describe the scene in natural lan
 
 ```bash
 # Clone the repository
-git clone https://github.com/sujithvaishnav/image_to_audio.git
-cd image_to_audio
+git clone https://github.com/sujithvaishnav/Hear_the_image.git
+cd Hear_the_image
 
 # Create virtual environment (optional but recommended)
 python -m venv venv
