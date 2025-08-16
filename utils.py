@@ -3,6 +3,7 @@ from typing import Optional
 from PIL import Image, ImageOps
 from gtts import gTTS
 import io
+import streamlit as st
 
 try:
     import easyocr
@@ -10,6 +11,7 @@ try:
 except Exception:
     OCR_AVAILABLE = False
 
+@st.cache_resource
 def get_ocr_reader(lang_list):
     if not OCR_AVAILABLE:
         return None
