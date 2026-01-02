@@ -1,20 +1,17 @@
 import time
+import io
+import requests
 import streamlit as st
 from PIL import Image, ImageOps
 
-import requests
-import io
+# =========================
+# CONFIG
+# =========================
+API_BASE_URL = "http://16.171.23.168:8000"  # EC2 Public IP
 
-try:
-    import easyocr
-    OCR_AVAILABLE = True
-except Exception:
-    OCR_AVAILABLE = False
-
-
-# -------------------------
-# Page Config
-# -------------------------
+# =========================
+# PAGE CONFIG
+# =========================
 st.set_page_config(
     page_title="Image → Audio Scene Describer",
     page_icon="🦮",
@@ -24,9 +21,9 @@ st.set_page_config(
 st.title("🦮 Image → Audio Scene Describer")
 st.caption("Accessible AI: describe what’s in a photo and speak it out.")
 
-# -------------------------
-# Input Section
-# -------------------------
+# =========================
+# INPUT SECTION
+# =========================
 col1, col2 = st.columns([1, 1])
 
 with col1:
@@ -40,8 +37,7 @@ with col1:
     if source == "Upload":
         file = st.file_uploader(
             "Upload an image",
-            type=["png", "jpg", "jpeg", "webp"],
-            accept_multiple_files=False
+            type=["png", "jpg", "jpeg", "webp"]
         )
         img = Image.open(file).convert("RGB") if file else None
     else:
@@ -60,24 +56,19 @@ with col2:
             ("Tamil", "ta"),
             ("Kannada", "kn"),
         ],
-        index=0,
         format_func=lambda x: x[0],
     )[1]
 
     add_ocr = st.toggle(
         "Include text in the scene (OCR)",
-        value=False,
-        help=(
-            "If enabled, the app reads printed text in the image. Requires EasyOCR. "
-            + ("✅ Detected." if OCR_AVAILABLE else "❌ Not installed")
-        ),
+        value=False
     )
 
 st.divider()
 
-# -------------------------
-# Preview
-# -------------------------
+# =========================
+# IMAGE PREVIEW
+# =========================
 if img is None:
     st.info("Upload or capture an image to begin.")
     st.stop()
@@ -85,71 +76,62 @@ if img is None:
 preview = ImageOps.contain(img, (768, 768))
 st.image(preview, caption="Input image", use_container_width=True)
 
-# -------------------------
-# Inference
-# -------------------------
+# =========================
+# INFERENCE (STREAMLIT → FASTAPI)
+# =========================
 if st.button("🔊 Describe & Speak", type="primary"):
-    with st.spinner("Analyzing image..."):
+    with st.spinner("Sending image to backend..."):
         try:
-            t0 = time.time()
-            # Convert PIL Image → raw bytes ONCE
-            img_io = io.BytesIO()
-            img.save(img_io, format="JPEG")
-            img_bytes = img_io.getvalue()
+            start_time = time.time()
+
+            # Convert image → bytes
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format="JPEG")
+            img_buffer.seek(0)
+
+            files = {
+                "file": ("image.jpg", img_buffer, "image/jpeg")
+            }
 
             data = {
                 "lang": lang,
-                "include_ocr": add_ocr
+                "include_ocr": str(add_ocr).lower()
             }
 
-            # ---- Caption API ----
-            files = {
-                "file": ("image.jpg", io.BytesIO(img_bytes), "image/jpeg")
-            }
-            resp = requests.post(
-                "http://127.0.0.1:8000/predict",
+            # ---- Call FastAPI (audio endpoint) ----
+            response = requests.post(
+                f"{API_BASE_URL}/predict/audio",
                 files=files,
                 data=data,
-                timeout=90
+                timeout=120
             )
-            resp.raise_for_status()
-            caption = resp.json()["caption"]
+            response.raise_for_status()
 
-            # ---- Audio API ----
-            files = {
-                "file": ("image.jpg", io.BytesIO(img_bytes), "image/jpeg")
-            }
-            audio_resp = requests.post(
-                "http://127.0.0.1:8000/predict/audio",
-                files=files,
-                data=data,
-                timeout=90
+            result = response.json()
+            caption = result["caption"]
+            audio_bytes = io.BytesIO(
+                bytes.fromhex(result["audio_hex"])
             )
-            audio_resp.raise_for_status()
-            audio_bytes = audio_resp.content
 
-            elapsed = time.time() - t0
-        except Exception as e:
-            st.error(f"Something went wrong: {e}")
+            elapsed = time.time() - start_time
+
+        except requests.exceptions.RequestException as e:
+            st.error("❌ Backend connection failed.")
+            st.code(str(e))
             st.stop()
 
     st.success("Done!")
     st.write("**Description:**", caption)
-
     st.audio(audio_bytes, format="audio/mp3")
-    st.caption(
-        f"Processed in ~{elapsed:.1f}s "
-        "(first run may take longer due to model downloads)."
-    )
+    st.caption(f"Processed in ~{elapsed:.1f}s")
 
-# -------------------------
-# Notes & Future Work
-# -------------------------
+# =========================
+# NOTES
+# =========================
 with st.expander("Design notes & future improvements"):
     st.markdown(
-        "- Replace gTTS with a local neural TTS for offline use (e.g., Coqui TTS)\n"
-        "- Add object grounding (e.g., YOLO) and spatial reasoning (left/right/near)\n"
-        "- Add on-device quantization (TFLite / ONNX)\n"
-        "- Add multi-turn voice interface with wake-word controls\n"
-        "- Add haptic feedback patterns for accessibility use cases"
+        "- Streamlit UI decoupled from ML backend using REST APIs\n"
+        "- Backend deployed as Dockerized FastAPI service on AWS EC2\n"
+        "- OCR and language selection handled via request parameters\n"
+        "- Future: async requests, streaming audio, auth, HTTPS"
     )
