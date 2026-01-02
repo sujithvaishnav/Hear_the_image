@@ -7,3 +7,5 @@ pillow
 gTTS
 easyocr
 accelerate
+fastapi
+uvicorn
