@@ -74,7 +74,7 @@ if img is None:
     st.stop()
 
 preview = ImageOps.contain(img, (768, 768))
-st.image(preview, caption="Input image", use_container_width=True)
+st.image(preview, caption="Input image", width=True)
 
 # =========================
 # INFERENCE (STREAMLIT → FASTAPI)
